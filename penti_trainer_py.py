@@ -4,91 +4,124 @@ import tty
 import time
 
 
-def load_chords(file_path):
-    chords = {}
-    with open(file_path, "r") as file:
-        for line in file:
-            char, chord = line.split(":")
-            chords[char] = chord.strip()
-    return chords
+class Trainer:
+    DEFAULT_SENTENCE: str = '"The quick brown fox jumps over the lazy dog."'
 
+    def __init__(self, sentence: str):
+        self.sentence: str = sentence
+        self.chords: dict[str, str] = self.load_chords()
+        self.input: str = ""
+        self.last_char: str = ""
+        self.start_time: float = 0.0
 
-def get_input_char():
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        ch = sys.stdin.read(1)
-    except KeyboardInterrupt:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        raise
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    return ch
+    @property
+    def position(self) -> int:
+        return min(len(self.input), len(self.sentence) - 1)
 
+    @property
+    def current_char(self) -> str:
+        return self.sentence[self.position]
 
-def main():
-    start_time = time.time()
+    @staticmethod
+    def load_chords() -> dict[str, str]:
+        chords = {}
+        with open("chords.txt", "r") as file:
+            for line in file:
+                char, chord = line.split(":")
+                chords[char.upper()] = chord.strip()
+        return chords
 
-    default_sentence = '"The quick brown fox jumps over the lazy dog."'
-    sentence = sys.argv[1] if len(sys.argv) > 1 else default_sentence
-    print(f"Using sentence:      {sentence}\n")
-
-    chords = load_chords("chords.txt")
-
-    input_line = ""
-
-    for char in sentence:
-        chord = chords.get(char.upper(), "? ???? (?????)")
-        print(f"\r {char} : {chord} : {input_line}", end="", flush=True)
-
-        correct = False
-        current_char = ""
-        need_correction = False
+    def get_input_char(self) -> str:
+        fd = sys.stdin.fileno()
+        normal_state = termios.tcgetattr(fd)
         while True:
-            input_char = get_input_char()
+            try:
+                tty.setraw(fd)
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, normal_state)
 
-            if input_char in ("\x03", "\x1b"):  # Ctrl+C, Esc
-                print("\nExecution interrupted by user.")
+            if ch in ("\x03", "\x1b"):  # Ctrl+C, Esc
+                print("\n\rExecution interrupted by user.")
                 quit()
 
-            if (input_char == char) and (not need_correction):
-                current_char = f"\033[92m{input_char}\033[0m"  # Green for correct
-                correct = True
-            else:
-                need_correction = True
-                if input_char == "\x7f":
-                    current_char = ""
-                    need_correction = False
-                elif not input_char.isprintable():  # Ignore non-printable characters
-                    continue
-                elif bool(current_char) ^ (need_correction):
-                    current_char = f"\033[91m{input_char}\033[0m"  # Red for incorrect
-                    print(
-                        f"\r ⌫ : {chords.get('⌫', '? ???? (?????)')} : {input_line}{current_char}", end="", flush=True
-                    )
-                    continue
-                elif current_char and need_correction:
-                    print(
-                        f"\r ⌫ : {chords.get('⌫', '? ???? (?????)')} : {input_line}{current_char}", end="", flush=True
-                    )
-                    continue
+            if ch == "\x7f":
+                return ""
+            if ch.isprintable():
+                return ch
 
-            print(f"\r {char} : {chord} : {input_line}{current_char}", end="", flush=True)
+    @staticmethod
+    def red(s: str) -> str:
+        return f"\033[91m{s}\033[0m"
 
-            if correct:
-                break
+    @staticmethod
+    def green(s: str) -> str:
+        return f"\033[92m{s}\033[0m"
 
-        input_line += current_char
+    @staticmethod
+    def blue(s: str) -> str:
+        return f"\033[93m{s}\033[0m"
 
-    end_time = time.time()
-    time_spent = end_time - start_time
-    time_spent_minutes = time_spent / 60
-    wpm = len(sentence) / 5 / time_spent_minutes
+    def get_chord(self, c: str) -> str:
+        return self.chords.get(c.upper(), "? ???? (?????)")
 
-    print(f"\n\nTime spent: {time_spent:.2f} seconds")
-    print(f"Words per minute (WPM): {wpm:.2f}")
+    def output(self) -> None:
+        if self.start_time:
+            sys.stdout.write("\033[2A")
+        else:
+            print("Using sentence:\n")
+
+        line_1 = f"\r\033[K{self.sentence[0 : self.position]}{self.blue(self.current_char)}{self.sentence[self.position + 1 : -1]} \n"
+        line_3 = "\r\033[K"
+
+        line_3 += self.green(self.input)
+
+        if self.last_char != "":
+            line_3 += self.red(self.last_char)
+            next_char = "⌫"
+        else:
+            next_char = self.current_char
+
+        line_2 = f"\r\033[K `{next_char}` -> `{self.get_chord(next_char)}`\n"
+
+        print(line_1 + line_2 + line_3, end="", flush=True)
+
+    def run(self) -> None:
+        for char in self.sentence:
+            self.last_char = ""
+
+            while True:
+                self.output()
+
+                char = self.get_input_char()
+                if self.start_time == 0:
+                    self.start_time = time.time()
+
+                if (char == self.current_char) and self.last_char == "":
+                    self.input += char
+                    break
+
+                if char == "":
+                    self.last_char = ""
+
+                elif self.last_char == "":
+                    self.last_char = char
+
+        self.results()
+
+    def results(self) -> None:
+        self.output()
+        end_time = time.time()
+        time_spent = end_time - self.start_time
+        time_spent_minutes = time_spent / 60
+        wpm = len(self.sentence) / 5 / time_spent_minutes
+
+        print(f"\n\nTime spent: {time_spent:.2f} seconds")
+        print(f"Words per minute (WPM): {wpm:.2f}")
 
 
 if __name__ == "__main__":
-    main()
+    sentence = sys.argv[1] if len(sys.argv) > 1 else Trainer.DEFAULT_SENTENCE
+
+    trainer = Trainer(sentence)
+    trainer.run()
