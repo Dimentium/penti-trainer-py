@@ -33,7 +33,7 @@ SYMBOL_KEYS: list[int, dict[int, tuple[str, str]]] = [
 class App:
     def __init__(self):
         self.keys: dict[int, str] = {value: key for key, value in vars(pyxel).items() if key.startswith("KEY_")}
-        self.t = PentiTrainer("Test")
+        self.t = PentiTrainer()
         pyxel.init(200, 120, title="Penti Typing Practice", fps=30)
         self.x = 0
         pyxel.FONT_WIDTH = 300
@@ -75,7 +75,7 @@ class App:
                 self.t = PentiTrainer()
             case "RETURN":
                 if self.t.completed:
-                    self.t = PentiTrainer("Test")
+                    self.t = PentiTrainer()
             case _:
                 self.t.update(key)
 
