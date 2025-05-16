@@ -1,5 +1,7 @@
 # Penti Trainer
 
+[Online version](https://kitao.github.io/pyxel/wasm/launcher/?play=Dimentium.penti-trainer-py.app.penti)
+
 Penti Trainer is a simple command-line application designed to help users practice typing with the PENTI chording keyboard layout. The application provides a sentence for the user to type, displaying the corresponding chord for each character. It measures the time taken and calculates the typing speed in words per minute (WPM).
 
 ## Description
