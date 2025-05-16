@@ -61,12 +61,16 @@ class PentiTrainer:
         return min(len(self.input), len(self.sentence) - 1)
 
     @property
-    def current_char(self) -> str:
+    def next_char(self) -> str:
         return "" if self.completed else self.sentence[self.position] if self.last_char == "" else "⌫"
 
     @property
-    def current_chord(self) -> str:
-        return self.get_chord(self.current_char)
+    def current_char(self) -> str:
+        return "" if self.completed else self.sentence[self.position]
+
+    @property
+    def next_chord(self) -> str:
+        return self.get_chord(self.next_char)
 
     @property
     def completed(self) -> bool:
@@ -103,7 +107,7 @@ class PentiTrainer:
         self.state.sentence_done = self.sentence[0 : self.position]
         self.state.sentence_here = self.current_char
         self.state.sentence_last = self.sentence[self.position + 1 :]
-        self.state.hint = f" `{self.current_char}` -> `{self.current_chord}`" if not self.completed else ""
+        self.state.hint = f" `{self.next_char}` -> `{self.next_chord}`" if not self.completed else ""
         self.state.input = self.input
         self.state.last_char = self.last_char
 
