@@ -18,7 +18,7 @@ This application is particularly useful for individuals looking to improve their
 Run the application from the command line, optionally providing a custom sentence to practice:
 
 ```bash
-python penti_trainer_py.py "Your custom sentence here"
+python penti_cli.py "Your custom sentence here"
 ```
 
 If no sentence is provided, the default sentence "The quick brown fox jumps over the lazy dog." is used.
