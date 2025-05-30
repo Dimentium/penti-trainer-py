@@ -1,4 +1,5 @@
-import time
+from time import time
+from dataclasses import dataclass
 
 CHORDS: list[tuple[str, str]] = [
     (" ", "# ---- (ALPHA)"),
@@ -38,13 +39,14 @@ CHORDS: list[tuple[str, str]] = [
 class PentiTrainer:
     __DEFAULT_SENTENCE: str = '"The quick brown fox jumps over the lazy dog."'
 
+    @dataclass
     class State:
-        sentence_done: str
-        sentence_here: str
-        sentence_last: str
-        hint: str
-        input: str
-        last_char: str
+        sentence_done: str = ""
+        sentence_here: str = ""
+        sentence_last: str = ""
+        hint: str = ""
+        input: str = ""
+        last_char: str = ""
 
     def __init__(self, text: str = __DEFAULT_SENTENCE):
         self.sentence: str = text
@@ -93,7 +95,7 @@ class PentiTrainer:
         if (ch == self.current_char) and self.last_char == "":
             self.input += ch
             if self.start_time == 0:
-                self.start_time = time.time()
+                self.start_time = time()
 
         elif ch == "" or ch == "\x7f":
             self.last_char = ""
@@ -112,15 +114,14 @@ class PentiTrainer:
         self.state.last_char = self.last_char
 
         if self.completed and self.end_time == 0:
-            self.end_time = time.time()
+            self.end_time = time()
 
         return True
 
     @property
     def results(self) -> str:
         time_spent = self.end_time - self.start_time
-        time_spent_minutes = time_spent / 60
-        wpm = len(self.sentence) / 5 / time_spent_minutes
+        wpm = (len(self.sentence) / 5) / (time_spent / 60) if time_spent and len(self.sentence) > 1 else 0
 
         result = f"WPM: {wpm:.2f} ({time_spent:.2f} seconds spent)"
 

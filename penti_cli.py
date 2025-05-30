@@ -3,7 +3,7 @@ import termios
 import tty
 import argparse
 
-from trainer import Trainer
+from penti_trainer import PentiTrainer
 
 
 class CliApp:
@@ -45,7 +45,7 @@ class CliApp:
     def blue(self, s: str) -> str:
         return f"\033[93m{s}\033[0m"
 
-    def output(self, s: Trainer.State) -> None:
+    def output(self, s: PentiTrainer.State) -> None:
         l1 = self._LB + s.sentence_done + self.blue(s.sentence_here) + s.sentence_last + self._LE
         l2 = self._LB + s.hint + self._LE
         l3 = self._LB + self.green(s.input) + self.red(s.last_char)
@@ -54,9 +54,9 @@ class CliApp:
 
     def run(self, text: str | None = None) -> None:
         if text:
-            t = Trainer(text)
+            t = PentiTrainer(text)
         else:
-            t = Trainer()
+            t = PentiTrainer()
 
         print("Using sentence:\n\n\n")
         self.output(t.state)
